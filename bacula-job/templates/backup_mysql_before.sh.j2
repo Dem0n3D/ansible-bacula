@@ -1,0 +1,52 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+#!/bin/bash
+
+# {{ ansible_managed }}
+
+level=$1
+
+{% if mysql_backup_password %}
+dbpass="-p{{ mysql_backup_password }}"
+{% else %}
+dbpass=""
+{% endif %}
+
+dbdump="mysqldump --single-transaction --master-data=2 --flush-logs --all-databases -u{{ mysql_backup_user }} $dbpass"
+fulldb_name="database.full.sql.gz"
+
+flush_logs="mysqladmin flush-logs -u{{ mysql_backup_user }} $dbpass"
+
+backup_dir="{{ mysql_backup_dir }}"
+logs_dir="{{ mysql_logs_dir }}"
+
+if [ ! -d $backup_dir ]; then
+    mkdir -p $backup_dir
+fi
+
+case ${level} in
+    "Full" )
+        if [ -f $backup_dir/${fulldb_name} ]; then
+            rm $backup_dir/* # delete all previous files (full, diff, incremental)
+        fi
+        ${dbdump} | gzip > $backup_dir/${fulldb_name}
+        ;;
+    "Differential"|"Incremental" )
+        if [ ! -f $backup_dir/${fulldb_name} ]; then
+            echo "Can't find ${fulldb_name}"
+            exit 2
+        fi
+
+        ${flush_logs}
+
+        # select all binary logs since last full backup
+        logs=$(find $logs_dir -newer $backup_dir/${fulldb_name} -name "mysql-bin.*" | grep -v "index")
+
+        rm $backup_dir/mysql-bin.* || echo 1
+
+        cp -p $logs $backup_dir
+        ;;
+    * )
+        echo "Unknown backup level!"
+        exit 1
+        ;;
+esac

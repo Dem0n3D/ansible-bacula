@@ -1,0 +1,13 @@
+---
+
+- name: restart bacula-dir
+  service: name=bacula-director state=restarted
+  delegate_to: "{{groups['bacula-director'][0]}}"
+  tags:
+    - job
+
+- name: reload bacula-dir
+  service: name=bacula-director state=reloaded
+  delegate_to: "{{groups['bacula-director'][0]}}"
+  tags:
+    - job

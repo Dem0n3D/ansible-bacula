@@ -1,0 +1,17 @@
+---
+
+pools:
+  - { name: daily, vol_retention: "2 months"}
+  - { name: weekly, vol_retention: "1 years"}
+  - { name: monthly, vol_retention: "3 years"}
+  - { name: default }
+schedule:
+  - { level: Full, pool: monthly, at: "1st sun at {{at}}" }
+  - { level: Differential, pool: weekly, at: "2nd-5th sun at {{at}}" }
+  - { level: Incremental, pool: daily, at: "mon-sat at {{at}}" }
+at: "3:00"
+default_pool: default
+
+mysql_backup_dir: "/var/backups/bacula_mysql"
+mysql_logs_dir: "/var/lib/mysql"
+mysql_backup_user: backup

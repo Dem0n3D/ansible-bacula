@@ -1,0 +1,76 @@
+# Bacula Director Master Configuration
+#   for {{groups['bacula-director'][0]}}
+
+# Define the name of this director so other clients can
+# connect to it and work with our system
+Director {
+  Name = "{{groups['bacula-director'][0]}}:director"
+  Query File = "/etc/bacula/scripts/query.sql"
+  Working Directory = "/var/lib/bacula"
+  PID Directory = "/var/run/bacula"
+  Maximum Concurrent Jobs = 5
+  Password = "{{bacula_director_password}}"
+  Messages = "{{groups['bacula-director'][0]}}:messages:daemon"
+}
+
+# This is where the catalog information will be stored (basically
+# this should be how to connect to whatever database we're using)
+Catalog {
+  Name = "{{groups['bacula-director'][0]}}:pgsql"
+  dbname = "{{bacula_director_pgsql_db}}"; dbuser = "{{bacula_director_pgsql_user}}"; dbpassword = "{{bacula_director_pgsql_password}}"
+}
+
+# Configure how the directory will log and/or send messages. This
+# should should be for just about everything.
+Messages {
+  Name = "{{groups['bacula-director'][0]}}:messages:standard"
+  Mail Command = "/usr/lib/bacula/bsmtp -h localhost -f {{email_from}} -s \"Bacula %t %e (for %c)\" %r"
+  Operator Command = "/usr/lib/bacula/bsmtp -h localhost -f {{email_from}} -s \"Bacula Intervention Required (for %c)\" %r"
+  Mail = admin@semograph.com = all, !skipped
+  Operator = admin@semograph.com = mount
+  Console = all, !skipped, !saved
+  # WARNING! the following will create a file that you must cycle from
+  #          time to time as it will grow indefinitely. However, it will
+  #          also keep all your messages if they scroll off the console.
+  Append = "/var/log/bacula/{{groups['bacula-director'][0]}}:director.log" = all, !skipped
+  Catalog = all
+}
+
+# These are messages directly from the various daemons themselves.
+Messages {
+  Name = "{{groups['bacula-director'][0]}}:messages:daemon"
+  Mail Command = "/usr/lib/bacula/bsmtp -h localhost -f {{email_from}} -s \"Bacula Notice (from Director %d)\" %r"
+  Mail = admin@semograph.com = all, !skipped
+  Console = all, !skipped, !saved
+  Append = "/var/log/bacula/{{groups['bacula-director'][0]}}:director.log" = all, !skipped
+}
+
+# Restricted console used by tray-monitor to get the status of the director
+Console {
+  Name = "{{groups['bacula-director'][0]}}:monitor:director"
+  Password = "{{bacula_console_password}}"
+  CommandACL = status, .status
+}
+
+# DEFAULT STORAGE SERVER ------------------------------------------------------
+# All the clients will define their own Storage Daemon configuration as they
+# will connect to a dedicated File device on that server (to aid Pool & Volume
+# management along with concurrent access). This section will define a default
+# Storage Daemon to connect to (using the standard FileStorage device) and a
+# Pool which will be used with that as well.
+Storage {
+  Name = "{{groups['bacula-storage'][0]}}:storage:default"
+  Address = {{groups['bacula-storage'][0]}}
+  Password = "{{bacula_director_password}}"
+  Device = "FileStorage"
+  Media Type = File
+}
+
+# CLIENTS ---------------------------------------------------------------------
+# No client (other than this server itself) will normally be defined directly
+# in this file. We'll get Puppet to create individual config files under
+# /etc/bacula/bacula-dir.d and then the following code will import them for us.
+
+# Finally, bring in all the additional pieces of configuration from the
+# different servers for which this Director was configured to manage
+@|"sh -c 'for f in /etc/bacula/bacula-dir.d/*.conf ; do echo @${f} ; done'"

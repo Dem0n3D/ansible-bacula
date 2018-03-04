@@ -1,0 +1,49 @@
+# {{ ansible_managed }}
+
+# Bacula Storage Daemon Configuration
+#   for {{groups['bacula-director'][0]}}
+#   via {{groups['bacula-director'][0]}}:director ({{groups['bacula-director'][0]}})
+
+# Configure the Director which will manage this Storage Daemon, and the
+# Director through which we'll send our messages (will be the same) one.
+Director {
+  Name = "{{groups['bacula-director'][0]}}:director"
+  Password = "{{bacula_director_password}}"
+}
+
+Messages {
+  Name = "{{groups['bacula-director'][0]}}:messages:standard"
+  Director = "{{groups['bacula-director'][0]}}:director" = all
+}
+
+# Configure the basic details for the Storage Daemon on this server
+Storage {
+  Name = "{{groups['bacula-storage'][0]}}:storage"
+  Working Directory = "/var/lib/bacula"
+  PID Directory = "/var/run/bacula"
+  Maximum Concurrent Jobs = 20
+}
+
+# Also configure access for something to monitor this Storage Daemon
+Director {
+  Name = "{{groups['bacula-director'][0]}}:monitor:storage"
+  Password = "{{bacula_console_password}}"
+  Monitor = Yes
+}
+
+# Not configure the default Device this Storage Daemon will provide
+Device {
+  Name = "FileStorage"
+  Media Type = File
+  Archive Device = {{bacula_storage_directory}}
+  Label Media = Yes
+  Random Access = Yes
+  Automatic Mount = Yes
+  Removable Media = No
+  Always Open = No
+}
+
+# All other Devices are created by the clients that need them - each will
+# prepare their own device and pool configuration, which will then be
+# saved under /etc/bacula/bacula-sd.d and imported by the following line:
+@|"sh -c 'for f in /etc/bacula/bacula-sd.d/*.conf ; do echo @${f} ; done'"

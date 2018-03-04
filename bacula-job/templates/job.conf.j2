@@ -1,0 +1,52 @@
+# {{ ansible_managed }}
+
+FileSet {
+  Name = {{inventory_hostname}}:fileset:{{name}}
+  Include {
+    File = {{fileset.include.file}}
+    Options {
+      signature=MD5
+      compression=GZIP
+    }
+  }
+}
+
+{% for pool in pools %}
+Pool {
+  Name = {{inventory_hostname}}:pool:{{name}}:{{pool.name}}
+  Pool Type = Backup
+  Use Volume Once = yes
+  AutoPrune = yes
+  {% if pool.vol_retention is defined %}
+  Volume Retention = {{pool.vol_retention}}
+  {% endif %}
+  Recycle = yes
+  Label Format = vol_{{name}}_{{pool.name}}.
+}
+
+{% endfor %}
+Schedule {
+  Name = {{inventory_hostname}}:schedule:{{name}}
+{% for run in schedule %}
+  Run = Level={{run.level}} Pool={{inventory_hostname}}:pool:{{name}}:{{run.pool}} {{run.at}}
+{% endfor %}
+}
+
+Job {
+  Name = {{inventory_hostname}}:{{name}}
+  Enabled = yes
+  Accurate = yes
+  Client = {{inventory_hostname}}
+  FileSet = {{inventory_hostname}}:fileset:{{name}}
+  Messages = {{groups['bacula-director'][0]}}:messages:standard
+{% if default_pool is defined %}
+  Pool = {{inventory_hostname}}:pool:{{name}}:{{default_pool}}
+{% endif %}
+  Storage = {{groups['bacula-director'][0]}}:storage:{{inventory_hostname}}
+  Prefer Mounted Volumes = yes
+  Schedule = {{inventory_hostname}}:schedule:{{name}}
+  Type = Backup
+{% if client_run_before_job is defined %}
+  Client Run Before Job = {{ client_run_before_job }}
+{% endif %}
+}

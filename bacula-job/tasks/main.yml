@@ -1,0 +1,35 @@
+---
+
+- name: Configure bacula job "{{name}}"
+  template:
+    src=job.conf.j2
+    dest="/etc/bacula/bacula-dir.d/{{inventory_hostname}}.job.{{name}}.conf"
+    owner=bacula
+    group=bacula
+    mode=640
+  delegate_to: "{{groups['bacula-director'][0]}}"
+  notify:
+    - reload bacula-dir
+  tags:
+    - job
+
+- name: Copy client run before job script
+  template:
+    src=backup_mysql_before.sh.j2
+    dest="/var/backups/backup_mysql_before.sh"
+    owner=bacula
+    group=bacula
+    mode=640
+  when: client_run_before_job is defined
+  tags:
+    - job
+
+- name: Create mysql backup dir
+  file:
+    path="{{mysql_backup_dir}}"
+    state=directory
+    owner=bacula
+    group=bacula
+    mode=640
+  tags:
+    - job

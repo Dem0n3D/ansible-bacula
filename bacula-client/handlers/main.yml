@@ -1,0 +1,12 @@
+---
+
+- name: restart bacula-fd
+  service: name=bacula-fd state=restarted
+
+- name: restart bacula-sd
+  service: name=bacula-sd state=restarted
+  delegate_to: "{{groups['bacula-storage'][0]}}"
+
+- name: restart bacula-dir
+  service: name=bacula-director state=restarted
+  delegate_to: "{{groups['bacula-director'][0]}}"

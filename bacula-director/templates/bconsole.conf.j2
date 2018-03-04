@@ -1,0 +1,9 @@
+# Bacula Console Configuration
+#   for {{groups['bacula-director'][0]}}
+#    to {{groups['bacula-director'][0]}}:director ({{groups['bacula-director'][0]}})
+
+Director {
+  Name = "{{groups['bacula-director'][0]}}:monitor:director"
+  Address = {{groups['bacula-director'][0]}}
+  Password = "{{bacula_director_password}}"
+}

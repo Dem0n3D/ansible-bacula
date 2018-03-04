@@ -1,0 +1,22 @@
+# {{ ansible_managed }}
+
+# Bacula Storage Daemon Dedicated Device Configuration
+#   for ftp.mir
+#   via {{groups['bacula-director'][0]}}:director ({{groups['bacula-director'][0]}})
+#    to {{groups['bacula-director'][0]}}:storage:{{inventory_hostname}} ({{groups['bacula-director'][0]}})
+#
+# Create dedicate device for {{inventory_hostname}} so we can support
+# concurrent backups on a Storage Daemon and to manage storage for
+# each server we back up.
+
+# Configure a dedicated Device for each Client
+Device {
+  Name = "{{inventory_hostname}}"
+  Media Type = File
+  Archive Device = "{{bacula_storage_directory}}/{{inventory_hostname}}"
+  Label Media = Yes
+  Random Access = Yes
+  Automatic Mount = Yes
+  Removable Media = No
+  Always Open = No
+}

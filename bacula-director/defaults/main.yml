@@ -1,0 +1,4 @@
+---
+
+bacula_director_pgsql_db: bacula
+bacula_director_pgsql_user: bacula

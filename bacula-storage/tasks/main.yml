@@ -1,0 +1,47 @@
+---
+
+- name: Install bacula storage
+  apt:
+    name="{{item}}"
+    state=latest
+  with_items:
+    - bacula-sd
+    - bacula-sd-pgsql
+
+- name: Create bacula storage directory
+  file:
+    path="{{bacula_storage_directory}}"
+    state=directory
+    owner=bacula
+    group=bacula
+    mode=750
+
+- name: Configure bacula storage
+  template:
+    src=bacula-sd.conf.j2
+    dest=/etc/bacula/bacula-sd.conf
+    owner=bacula
+    group=bacula
+    mode=640
+  notify:
+    - restart bacula-sd
+
+- name: Create bacula client storage config directory
+  file:
+    path=/etc/bacula/bacula-sd.d/
+    state=directory
+    owner=bacula
+    group=bacula
+    mode=750
+  notify:
+    - restart bacula-sd
+
+- name: Create bacula empty client storage config
+  copy:
+    content="# EMPTY CONFIG"
+    dest=/etc/bacula/bacula-sd.d/empty.conf
+    owner=bacula
+    group=bacula
+    mode=640
+  notify:
+    - restart bacula-sd

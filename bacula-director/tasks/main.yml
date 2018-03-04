@@ -1,0 +1,66 @@
+---
+
+- name: Install bacula director
+  apt:
+    name="{{item}}"
+    state=latest
+  with_items:
+    - postgresql
+    - bacula-director-pgsql
+    - python-psycopg2
+    - bacula-console
+    - acl
+
+- name: Configure bacula director
+  template:
+    src=bacula-dir.conf.j2
+    dest=/etc/bacula/bacula-dir.conf
+    owner=bacula
+    group=bacula
+    mode=640
+  notify:
+    - restart bacula-dir
+
+- name: Create bacula client director config directory
+  file:
+    path=/etc/bacula/bacula-dir.d/
+    state=directory
+    owner=bacula
+    group=bacula
+    mode=750
+  notify:
+    - restart bacula-dir
+
+- name: Create bacula empty client director config
+  copy:
+    content="# EMPTY CONFIG"
+    dest=/etc/bacula/bacula-dir.d/empty.conf
+    owner=bacula
+    group=bacula
+    mode=640
+  notify:
+    - restart bacula-dir
+
+- name: Configure bacula console
+  template:
+    src=bconsole.conf.j2
+    dest=/etc/bacula/bconsole.conf
+    owner=bacula
+    group=bacula
+    mode=640
+
+- name: Create PostgreSQL database
+  postgresql_db: name={{bacula_director_pgsql_db}} template=template0 encoding='SQL_ASCII'
+  become_user: postgres
+  register: db
+
+- name: Create PostgreSQL user
+  postgresql_user: db={{bacula_director_pgsql_db}} name={{bacula_director_pgsql_user}} password={{bacula_director_pgsql_password}} role_attr_flags=LOGIN,NOSUPERUSER
+  become_user: postgres
+
+- name: Create DB schema
+  shell: "db_name={{bacula_director_pgsql_db}} /usr/share/bacula-director/make_postgresql_tables"
+  become_user: bacula
+  when: db.changed
+  notify:
+    - restart bacula-dir

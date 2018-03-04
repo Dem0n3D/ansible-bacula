@@ -1,0 +1,49 @@
+---
+
+- name: Install bacula fd
+  apt:
+    name="{{item}}"
+    state=latest
+  with_items:
+    - bacula-fd
+
+- name: Configure bacula file daemon
+  template:
+    src=bacula-fd.conf.j2
+    dest=/etc/bacula/bacula-fd.conf
+    owner=bacula
+    group=bacula
+    mode=640
+  notify:
+    - restart bacula-fd
+
+- name: Create storage directory
+  file:
+    path="{{bacula_storage_directory}}/{{inventory_hostname}}"
+    state=directory
+    owner=bacula
+    group=bacula
+    mode=750
+  delegate_to: "{{groups['bacula-storage'][0]}}"
+
+- name: Configure storage dedicated device
+  template:
+    src=storage-device.conf.j2
+    dest="/etc/bacula/bacula-sd.d/{{inventory_hostname}}.conf"
+    owner=bacula
+    group=bacula
+    mode=640
+  delegate_to: "{{groups['bacula-storage'][0]}}"
+  notify:
+    - restart bacula-sd
+
+- name: Configure bacula client
+  template:
+    src=director-host.conf.j2
+    dest="/etc/bacula/bacula-dir.d/{{inventory_hostname}}.conf"
+    owner=bacula
+    group=bacula
+    mode=640
+  delegate_to: "{{groups['bacula-director'][0]}}"
+  notify:
+    - restart bacula-dir
