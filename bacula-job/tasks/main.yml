@@ -1,9 +1,9 @@
 ---
 
-- name: Configure bacula job "{{name}}"
+- name: Configure bacula job "{{job_name}}"
   template:
     src=job.conf.j2
-    dest="/etc/bacula/bacula-dir.d/{{inventory_hostname}}.job.{{name}}.conf"
+    dest="/etc/bacula/bacula-dir.d/{{inventory_hostname}}.job.{{job_name}}.conf"
     owner=bacula
     group=bacula
     mode=640
