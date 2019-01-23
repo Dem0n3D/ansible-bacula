@@ -55,7 +55,12 @@
   register: db
 
 - name: Create PostgreSQL user
-  postgresql_user: db={{bacula_director_pgsql_db}} name={{bacula_director_pgsql_user}} password={{bacula_director_pgsql_password}} role_attr_flags=LOGIN,NOSUPERUSER
+  postgresql_user:
+    db: "{{bacula_director_pgsql_db}}"
+    name: "{{bacula_director_pgsql_user}}"
+    password: "{{bacula_director_pgsql_password}}"
+    role_attr_flags: "LOGIN,NOSUPERUSER"
+    encrypted: yes
   become_user: postgres
 
 - name: Create DB schema
