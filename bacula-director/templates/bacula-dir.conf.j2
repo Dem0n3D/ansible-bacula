@@ -20,14 +20,15 @@ Catalog {
   dbname = "{{bacula_director_pgsql_db}}"; dbuser = "{{bacula_director_pgsql_user}}"; dbpassword = "{{bacula_director_pgsql_password}}"
 }
 
+{% if bacula_mail is defined %}
 # Configure how the directory will log and/or send messages. This
 # should should be for just about everything.
 Messages {
   Name = "{{groups['bacula-director'][0]}}:messages:standard"
   Mail Command = "/usr/lib/bacula/bsmtp -h localhost -f {{email_from}} -s \"Bacula %t %e (for %c)\" %r"
   Operator Command = "/usr/lib/bacula/bsmtp -h localhost -f {{email_from}} -s \"Bacula Intervention Required (for %c)\" %r"
-  Mail = admin@semograph.com = all, !skipped
-  Operator = admin@semograph.com = mount
+  Mail = {{ bacula_mail }} = all, !skipped
+  Operator = {{ bacula_mail_operator | default(bacula_mail) }} = mount
   Console = all, !skipped, !saved
   # WARNING! the following will create a file that you must cycle from
   #          time to time as it will grow indefinitely. However, it will
@@ -35,15 +36,18 @@ Messages {
   Append = "/var/log/bacula/{{groups['bacula-director'][0]}}:director.log" = all, !skipped
   Catalog = all
 }
+{% endif %}
 
+{% if bacula_mail is defined %}
 # These are messages directly from the various daemons themselves.
 Messages {
   Name = "{{groups['bacula-director'][0]}}:messages:daemon"
   Mail Command = "/usr/lib/bacula/bsmtp -h localhost -f {{email_from}} -s \"Bacula Notice (from Director %d)\" %r"
-  Mail = admin@semograph.com = all, !skipped
+  Mail = {{ bacula_mail }} = all, !skipped
   Console = all, !skipped, !saved
   Append = "/var/log/bacula/{{groups['bacula-director'][0]}}:director.log" = all, !skipped
 }
+{% endif %}
 
 # Restricted console used by tray-monitor to get the status of the director
 Console {
